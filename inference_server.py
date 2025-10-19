@@ -42,7 +42,8 @@ def load_model():
     device = 0 if torch.cuda.is_available() else -1
     classifier = pipeline(
         "zero-shot-classification",
-        model="facebook/bart-large-mnli",
+        # model="facebook/bart-large-mnli",
+        model="facebook/bart-large",
         device=device
     )
 
