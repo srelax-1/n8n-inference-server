@@ -7,8 +7,9 @@ import torch
 # Request and Response Models
 # ---------------------------
 class ClassificationRequest(BaseModel):
-    text: str
-    labels: list[str]
+    subject: str
+    body: str
+    labels: dict[str, str]  # {label: description}
 
 
 class ClassificationResponse(BaseModel):
@@ -23,8 +24,8 @@ class ClassificationResponse(BaseModel):
 # App Initialization
 # ---------------------------
 app = FastAPI(
-    title="Local Hugging Face Classifier API",
-    description="A lightweight local API for zero-shot text classification using Hugging Face transformers.",
+    title="Local Classifier API using Hugging Face Model",
+    description="A lightweight local Zero-shot text classifier that uses subject + body and label descriptions with Hugging Face transformers.",
     version="1.0.0"
 )
 
@@ -46,17 +47,30 @@ def load_model():
 # ---------------------------
 @app.post("/classify", response_model=ClassificationResponse)
 async def classify(req: ClassificationRequest):
-    """Classify input text into one of the provided labels."""
-    if not req.text.strip() or not req.labels:
-        raise HTTPException(status_code=400, detail="Both text and labels are required.")
+    """Classify input subject + body using descriptive labels."""
+    if not req.subject.strip() and not req.body.strip():
+        raise HTTPException(status_code=400, detail="Either subject or body is required.")
+    if not req.labels:
+        raise HTTPException(status_code=400, detail="At least one label with description is required.")
 
-    result = classifier(req.text, req.labels)
+    # Combine subject and body for better understanding
+    full_text = f"Subject: {req.subject}\n\nBody: {req.body}"
+
+    # Convert labels dict into descriptive list
+    descriptive_labels = [f"{label}: {desc}" for label, desc in req.labels.items()]
+
+    # Run classification
+    result = classifier(full_text, descriptive_labels)
+
+    # Map back best label (without description)
+    best_label_full = result["labels"][0]
+    best_label = best_label_full.split(":")[0]
 
     return ClassificationResponse(
-        text=req.text,
+        text=full_text,
         labels=result["labels"],
         scores=result["scores"],
-        best_label=result["labels"][0],
+        best_label=best_label,
         confidence=result["scores"][0],
     )
 
