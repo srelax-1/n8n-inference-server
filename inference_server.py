@@ -10,6 +10,9 @@ class ClassificationRequest(BaseModel):
     subject: str
     body: str
     labels: dict[str, str]  # {label: description}
+    ticket_id: int | None = None
+    reference_id: int | None = None
+
 
 
 class ClassificationResponse(BaseModel):
@@ -18,6 +21,8 @@ class ClassificationResponse(BaseModel):
     confidence: float
     labels: list[str]
     scores: list[float]
+    ticket_id: int | None = None
+    reference_id: int | None = None
 
 
 # ---------------------------
@@ -72,6 +77,8 @@ async def classify(req: ClassificationRequest):
         scores=result["scores"],
         best_label=best_label,
         confidence=result["scores"][0],
+        ticket_id=req.ticket_id,
+        reference_id=req.reference_id,
     )
 
 
