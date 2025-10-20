@@ -69,7 +69,7 @@ API_DESCRIPTION=A lightweight local Zero-shot text classifier that uses subject 
 Run the server using uvicorn:
 
 ```bash
-uvicorn inference_server:app --host 0.0.0.0 --port 8000 --reload
+uvicorn inference_server:app
 ```
 
 The server will start and load the model. You should see logs indicating successful model loading.
