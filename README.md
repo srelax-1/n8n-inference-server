@@ -160,6 +160,11 @@ The server supports any Hugging Face model compatible with `zero-shot-classifica
 - `facebook/bart-large-mnli` (lightweight)
 - `facebook/bart-large-mnli`
 
+The model files downloaded can be found in 
+```
+~/.cache/huggingface/hub/
+```
+
 To use a different model, set the `MODEL_NAME` environment variable.
 
 ## Development
