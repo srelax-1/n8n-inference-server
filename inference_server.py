@@ -15,6 +15,9 @@ HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 8000))
 MODEL_NAME = os.getenv("MODEL_NAME", "facebook/bart-large-mnli")
 
+# Hugging Face cache directory
+os.environ["HF_HOME"] = os.getenv("HF_HOME", "./hf_cache")
+
 # ---------------------------
 # Logging configuration
 # ---------------------------
