@@ -5,9 +5,9 @@ A FastAPI-based inference server for text classification using transformer model
 ## Features
 
 - Fast and efficient text classifier using Hugging Face transformers
-<!-- - Configurable via environment variables
+- Configurable via environment variables
 - Health check endpoint for monitoring
-- Proper error handling and logging -->
+- Proper error handling and logging
 
 
 ## Installation
@@ -33,11 +33,10 @@ venv\Scripts\activate
 
 3. Install dependencies:
 ```bash
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-pip install transformers accelerate fastapi uvicorn python-dotenv sentencepiece
+pip install -r requirements.txt
 ```
 
-<!-- ## Configuration
+## Configuration
 
 The server can be configured using environment variables. Create a `.env` file in the project root:
 
@@ -53,7 +52,7 @@ MODEL_NAME=facebook/bart-large-mnli
 API_TITLE=n8n Inference Server
 API_VERSION=1.0.0
 API_DESCRIPTION=A lightweight local Zero-shot text classifier that uses subject + body and label descriptions with Hugging Face transformers
-``` -->
+```
 
 ### Configuration Parameters
 
@@ -70,7 +69,7 @@ API_DESCRIPTION=A lightweight local Zero-shot text classifier that uses subject 
 Run the server using uvicorn:
 
 ```bash
-uvicorn inference_server:app --host 0.0.0.0 --port 8000 --reload
+uvicorn inference_server:app
 ```
 
 The server will start and load the model. You should see logs indicating successful model loading.
@@ -144,7 +143,7 @@ Generate text based on a prompt.
 }
 ```
 
-<!-- ## Error Handling
+## Error Handling
 
 The server includes comprehensive error handling:
 
@@ -152,21 +151,21 @@ The server includes comprehensive error handling:
 - **503 Service Unavailable**: Model not loaded yet
 - **500 Internal Server Error**: Generation or server errors
 
-All errors return JSON responses with a `detail` field explaining the issue. -->
+All errors return JSON responses with a `detail` field explaining the issue.
 
 ## Model Support
 
 The server supports any Hugging Face model compatible with `zero-shot-classification`. Some recommended models:
 
 - `facebook/bart-large-mnli` (lightweight)
-- `facebook/bart-large-large`
+- `facebook/bart-large-mnli`
 
 The model files downloaded can be found in 
 ```
 ~/.cache/huggingface/hub/
 ```
 
-<!-- To use a different model, set the `MODEL_NAME` environment variable. -->
+To use a different model, set the `MODEL_NAME` environment variable.
 
 ## Development
 
@@ -176,11 +175,12 @@ The model files downloaded can be found in
 n8n-inference-server/
 ├── inference_server.py            
 ├── requirements.txt   
-├── .gitignore              
+├── .gitignore         
+├── .env                
 └── README.md           
 ```
 
-<!-- ### Logging
+### Logging
 
 The server uses Python's built-in logging module. Logs include:
 - Model loading status
@@ -190,7 +190,7 @@ The server uses Python's built-in logging module. Logs include:
 Logs are output to stdout with the format:
 ```
 %(asctime)s - %(name)s - %(levelname)s - %(message)s
-``` -->
+```
 
 ## Integration with n8n
 

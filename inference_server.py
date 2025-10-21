@@ -2,6 +2,30 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from transformers import pipeline
 import torch
+import uvicorn
+import logging
+import os
+from dotenv import load_dotenv
+from contextlib import asynccontextmanager
+
+
+load_dotenv()
+
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", 8000))
+MODEL_NAME = os.getenv("MODEL_NAME", "facebook/bart-large-mnli")
+
+# Hugging Face cache directory
+os.environ["HF_HOME"] = os.getenv("HF_HOME", "./hf_cache")
+
+# ---------------------------
+# Logging configuration
+# ---------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 # ---------------------------
 # Request and Response Models
@@ -9,7 +33,7 @@ import torch
 class ClassificationRequest(BaseModel):
     subject: str
     body: str
-    labels: dict[str, str]  # {label: description}
+    labels: dict[str, str]
     ticket_id: int | None = None
     reference_id: int | None = None
 
@@ -34,17 +58,31 @@ app = FastAPI(
     version="1.0.0"
 )
 
+classifier = None
 
-@app.on_event("startup")
-def load_model():
-    """Load the model once when the app starts."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handles startup and shutdown events using the new lifespan API."""
     global classifier
-    device = 0 if torch.cuda.is_available() else -1
-    classifier = pipeline(
-        "zero-shot-classification",
-        model="facebook/bart-large-mnli",
-        device=device
-    )
+    try:
+        device = 0 if torch.cuda.is_available() else -1
+        logger.info(f"Loading model '{MODEL_NAME}' (device={'GPU' if device == 0 else 'CPU'}) ...")
+        classifier = pipeline(
+            "zero-shot-classification",
+            model=MODEL_NAME,
+            device=device
+        )
+        logger.info("✅ Model loaded successfully.")
+    except Exception as e:
+        logger.exception("❌ Failed to load model.")
+        raise RuntimeError(f"Model loading failed: {e}")
+
+    # Startup complete
+    yield
+
+    # Shutdown
+    logger.info("Shutting down n8n Inference Server...")
+
 
 
 # ---------------------------
@@ -57,6 +95,8 @@ async def classify(req: ClassificationRequest):
         raise HTTPException(status_code=400, detail="Either subject or body is required.")
     if not req.labels:
         raise HTTPException(status_code=400, detail="At least one label with description is required.")
+    if classifier is None:
+        raise HTTPException(status_code=503, detail="Model not loaded yet. Please try again later.")
 
     # Combine subject and body for better understanding
     full_text = f"Subject: {req.subject}\n\nBody: {req.body}"
@@ -64,12 +104,20 @@ async def classify(req: ClassificationRequest):
     # Convert labels dict into descriptive list
     descriptive_labels = [f"{label}: {desc}" for label, desc in req.labels.items()]
 
+    logger.info(f"Classifying ticket (ID={req.ticket_id}, Ref={req.reference_id}) with {len(descriptive_labels)} labels.")
+
     # Run classification
-    result = classifier(full_text, descriptive_labels)
+    try:
+        result = classifier(full_text, descriptive_labels)
+    except Exception as e:
+        logger.exception("Classification failed.")
+        raise HTTPException(status_code=500, detail=f"Classification failed: {str(e)}")
 
     # Map back best label (without description)
     best_label_full = result["labels"][0]
     best_label = best_label_full.split(":")[0]
+
+    logger.info(f"Classification complete — Best label: {best_label}, Confidence: {result['scores'][0]:.4f}")
 
     return ClassificationResponse(
         text=full_text,
@@ -84,4 +132,16 @@ async def classify(req: ClassificationRequest):
 
 @app.get("/status")
 def status():
-    return {"status": "ok", "message": "Classifier API is running."}
+    """Health check endpoint."""
+    model_loaded = classifier is not None
+    return {
+        "status": "ok" if model_loaded else "error",
+        "model_loaded": model_loaded,
+        "message": "Classifier API is running." if model_loaded else "Model not loaded."
+    }
+
+# ---------------------------
+# Main entry point (optional)
+# ---------------------------
+if __name__ == "__main__":
+    uvicorn.run("inference_server:app", host=HOST, port=PORT, reload=True)
