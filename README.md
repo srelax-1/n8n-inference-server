@@ -33,7 +33,8 @@ venv\Scripts\activate
 
 3. Install dependencies:
 ```bash
-pip install -r requirements.txt
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install transformers accelerate fastapi uvicorn python-dotenv sentencepiece
 ```
 
 ## Configuration

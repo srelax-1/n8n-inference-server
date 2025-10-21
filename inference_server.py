@@ -15,9 +15,6 @@ HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 8000))
 MODEL_NAME = os.getenv("MODEL_NAME", "facebook/bart-large-mnli")
 
-# Hugging Face cache directory
-os.environ["HF_HOME"] = os.getenv("HF_HOME", "./hf_cache")
-
 # ---------------------------
 # Logging configuration
 # ---------------------------
@@ -49,15 +46,6 @@ class ClassificationResponse(BaseModel):
     reference_id: int | None = None
 
 
-# ---------------------------
-# App Initialization
-# ---------------------------
-app = FastAPI(
-    title="Local Classifier API using Hugging Face Model",
-    description="A lightweight local Zero-shot text classifier that uses subject + body and label descriptions with Hugging Face transformers.",
-    version="1.0.0"
-)
-
 classifier = None
 
 @asynccontextmanager
@@ -83,6 +71,15 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down n8n Inference Server...")
 
+# ---------------------------
+# App Initialization
+# ---------------------------
+app = FastAPI(
+    title="Local Classifier API using Hugging Face Model",
+    description="A lightweight local Zero-shot text classifier that uses subject + body and label descriptions with Hugging Face transformers.",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 
 # ---------------------------
